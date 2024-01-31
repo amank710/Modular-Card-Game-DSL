@@ -1,0 +1,6 @@
+env/
+src/parser/*.py
+src/parser/*.interp
+src/parser/*.tokens
+
+**/*.swp
