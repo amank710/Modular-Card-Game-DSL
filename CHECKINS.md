@@ -212,3 +212,286 @@ result: "RESULT:" conditional+ "END RESULT"
 ```
 - High level structure of modules
 - Timeline finished
+
+# Check-in 3 Report Items
+## Explain a mockup of your concrete language design, including descriptions of both the syntax and what is meant to happen
+For our language design, the grammar currently remains largely the same as last week's check-in: 
+``` 
+program: config game result
+``` 
+Our program will consist of 3 main parts: 
+1. Config, which sets up the configuration for the card game. 
+2. Game, which establishes the rules and actions for the card game. 
+3. Result, which establishes the logic for deciding the end of the game and for determining the winner of the game. 
+For the Config portion, we came up with this grammar: 
+``` 
+config : 'CONFIGURATION:' (statement | config_struct)* 'END CONFIGURATION' ;
+
+statement: roles
+config_struct : card_val_override | actions | variables ;
+
+card_val_override : 'CARD VALUE OVERRIDE:' entity_card* joker_card 'END CARD VALUE OVERRIDE';
+entity_card : 'ace' | 'king' | 'queen' | 'jack' '=' [0-9]+( 'or' [0-9]+)*;
+
+// can be truetrue -> needs cleanup
+joker_card : 'joker' = ^(true|false)$; 
+
+actions : 'ACTIONS' user_actions+ 'END ACTIONS';
+
+
+user_actions : user_action '=' system_actions( 'and' system_actions)*;
+user_action: TEXT;
+system_actions : "pickCard()"|"showCard()"|"hideCard()"|"skipTurn()"|"gameOver()";
+
+roles : 'roles' '=' '{' role ',' role '}'
+role : TEXT
+
+variables_struct: 'VARIABLES:' role variable 'END VARIABLES'
+variable : TEXT
+
+TEXT: ^[A-Za-z0-9]+ (?!system_actions);
+``` 
+Within the Config portion, users should be able to create different statements and config_structs that set up different parts of the game. The statements are for establishing roles within the card game (such as creating a Player or a Dealer), while the config_structs serve multiple purposes. The config_structs can be one of 3 things: 
+1. Overriding the values of certain cards (eg. setting king=10 for a game of blackjack) 
+2. Defining actions that the user can take (eg. setting HIT=pickCard()) 
+3. Defining user variables 
+For the Game portion, we came up with this grammar:
+``` 
+game: "GAME:" functions "END GAME"
+
+functions: function+
+function: function_callback ":" func_statements "end"
+
+(* Callback types for functions *)
+function_callback: on_first_turn() | on_turn() | action_callback
+action_callback: "on_" user_action
+
+(* Statements within a function *)
+func_statements: func_statement+
+func_statement: assignment | user_action | system_action | loop | conditional
+
+(* Assignment statement *)
+assignment: variable "=" TEXT
+
+(* Conditional statement *)
+(* if they want multiple conditionals, they will have to nest their conditionals *)
+conditional: "if" variable relational (variable | integer | string | boolean) ":" func_statements
+
+(* Loop statement *)
+loop: "LOOP" conditional ":" func_statements "END LOOP"
+
+(* Relational operators *)
+relational: ">" | "<" | "==" | "!=" | ">=" | "<="
+
+(* Types of values *)
+integer: [0-9]+
+string: [A-Za-z]+ 
+boolean: "TRUE" | "FALSE"
+
+(* common functions between both roles *)
+commons: "COMMON:" function+ "END COMMON"
+
+(* Role override for rules/actions that are different between the two roles *)
+role_override: role ":" function* "END " role
+``` 
+Within the Game portion, users should be able to define different functions that act as the rules to the card game. These functions can be applied to either all players (by inculding them in the common block) or to specific players (by including those functions in an role_override block). Within those functions, users can define different types of callbacks, which tell us when/where the user wants the function to execute (eg. execute this function on_turn(), which means that on each player's turn this function will execute). Within those callbacks, users can then setup different variable assignments, conditionals, loops, and call actions defined in Config. 
+For the Result portion, we have: 
+``` 
+result: "RESULT:" conditional+ "END RESULT" 
+``` 
+Within the Result portion, users only have to define certain conditionals for when/how the game ends. The user can also define conditionals for how the game decides who the winner of the game is. 
+### Include the example snippets you used in your user study, and their outputs.
+For the example snippets used in our user study, we essentially gave them an overview of our grammar and let them try to make the card game Blackjack out of it. The outputs from our user study are as follows: 
+User 1: 
+``` 
+# CONFIG
+CONFIGURATION:
+
+	CARD VALUE OVERRIDE:
+		ace = 1 or 11 
+		king, queen, jack = 10
+		joker = false
+	END CARD VALUE OVERRIDE
+	
+	roles = {DEALER, PLAYER}
+	
+	ACTIONS:
+		HIT = Game::pickCard() // need to preserve order
+		STAY = Game::skipTurn()
+		SHOW = Game::showCard()
+		HIDE = Game::hideCard()
+		FORFIT = Game::skipTurn() and Game::gameOver()
+		HITHIDE = Game::pickCard() and Game::hideCard()
+		HITSHOW = Game::pickCard() and Game::showCard()
+		PICK2CARDS = Game::pickCard() and Game::pickCard()
+	END ACTIONS
+	
+	VARIABLES: // user variable
+		DEALER score
+		PLAYER score
+	END VARIABLES:
+
+END CONFIGURATION
+
+# GAME
+DEALER:
+
+	setup():
+		cards = 2
+		HIDE
+		end
+	
+	on_turn():
+		loop if score < 17:
+			HIT
+		end
+		
+	on_HIT():
+		score = score + card
+	
+		if score >= 21:
+			Game::gameOver()
+
+END DEALER
+PLAYER:
+
+	setup:
+		cards = 2
+		end
+	
+	on_turn:
+		# turn mechanics for playing Blackjack
+		action = wait_for(HIT, STAY)
+		loop if action is HIT:
+			action = wait_for(HIT, STAY)
+		end
+	
+	on_HIT():
+		score = score + card
+	
+		if score >= 21:
+			Game::gameOver()
+		
+	
+	on_STAY():
+		none
+
+
+END PLAYER
+
+# RESULT
+DEALER score > 21
+PLAYER score > 21
+``` 
+User 2: 
+``` 
+# CONFIG
+CONFIGURATION:
+	CARD VALUE OVERRIDE:
+		joker = false
+	END CARD VALUE OVERRIDE
+
+	roles = {PLAYER1, PLAYER2}
+
+	ACTIONS:
+		COMPARE = Game::showCard() and Game::showCard()
+		FISH = Game::pickCard() 
+		GOFISH = Game::skipTurn()
+		GIVE = Game::giveCard(card)
+		TAKE = Game::getCard(card)
+		PICK = Game::showCard()
+
+
+	END ACTIONS
+
+	VARIABLES:
+		PLAYER1 numPairs
+		PLAYER2 numPairs
+		PLAYER1 comparisonCard
+		PLAYER2 comparisonCard
+		PLAYER1 found
+		PLAYER2 found
+
+	END VARIABLES
+
+END CONFIGURATION
+
+# GAME 
+COMMON:
+
+	setup():
+		cards = 10
+		SHOW
+		loop card in cards
+			COMPARE
+			comparisonCard = card
+		end
+
+	on_turn():
+		found = false
+		PICK
+		response = Game::request(GIVE or GOFISH)
+		if response == GIVE
+			TAKE
+			numPairs = numPairs + 1
+		else 
+			FISH
+			comparisonCard = card
+			COMPARE 
+	end
+			
+		
+	on_COMPARE():
+		if card == comparisonCard
+			numPairs = numPairs + 1
+			found = TRUE
+		comparisonCard = none
+
+
+	on_request():
+		comparisonCard = request
+		COMPARE
+		if found
+			GIVE
+		else
+			GOFISH
+
+
+END COMMON
+``` 
+## Notes about first user study 
+### What did they find easy/difficult?
+In terms of what they found easy: 
+- The overall structure was clear and easy to understand
+- The idea behind the DSL was straightforward 
+In terms of what they found difficult: 
+- Not having an ability to communicate between players or different roles was an issue 
+- No global variables (that are accessible in any scope)
+- A lot of bloat; there seems to be a lot of unnecessary syntax
+- Limited options for actions, and how to use them was unclear 
+### What did you learn from your user(s)? 
+From our users, we learned that:
+- Our language doesn’t support interaction between players, so some games might not longer be possible
+- We abstracted some syntax out, but the syntax still feels bloated 
+- Some parts of the syntax were confusing and unclear 
+### Is there anything you would have done differently? Can this be done for your final user study?
+For what we would have done differently: 
+- Explain/give more context behind how to use the language 
+- Rework parts of our syntax to make it easier to work with and more clear 
+Both of these should be easily doable in our final user study. 
+## What changes to your language design have you made so far, or are considering?
+We are considering the following changes: 
+- Rename 'on_first_turn' to 'setup' (to make it clear that this block should contain functions for setting up the game) 
+- Allowing for more function calls 
+- Reworking a lot of the grammar to make it easier to understand and reduce the amount of unneccessary syntax 
+### How does this affect the example snippets you include here?
+- Any 'on_first_turn' blocks will be replaced with 'setup' blocks 
+- The structure of the syntax would likely change for a lot of the Config and Game portions of the example snippets 
+## Any changes to your project timeline/plan that you need to make? 
+Since we are behind schedule with regards to our original timeline/plan, we will need to push back our core development to include the week of Feb 12th. Additionally, since we are thinking of reworking parts of our grammar, that delays our completion of the parser and checker, which means we will have to push the completion of those components further back as well (likely by a week). 
+## Are there new tests you can write now, based on your current project status?
+For our current project status, since we are still in the process of both reworking the grammar and completing the parser and lexer, we can write tests to ensure that the parser and lexer are providing the correct output. 
+### How can your snippets be made into unit tests, and for which component(s)?
+We can use the snippets as input for tests on different components, particularly the lexer and parser to ensure that the tokens are being created and parsed correctly. As well, we can translate snippets into sample ASTs, then use those mock ASTs both for development of other components and to ensure that the output from our lexer and parser is correct. 
+#### What about planned error handling in your components? Tests for these?
+We will have planned error handling or lexer and parser in case we see tokens being generated that are invalid or not what we expect. These errors can then be validated with error tests (tests to ensure that our error handling is throwing and catching errors as intended). Furthermore, we will have error handling for our game factory component to ensure that the input from our AST doesn't include any errors (as an additional check after the AST has gone through our checker component). 
