@@ -1,6 +1,10 @@
 env/
+venv/
 src/parser/*.py
 src/parser/*.interp
 src/parser/*.tokens
+__pycache__/
 
 **/*.swp
+
+.DS_Store
