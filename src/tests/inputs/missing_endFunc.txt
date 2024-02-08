@@ -1,0 +1,6 @@
+GAME
+    COMMON
+        on_someGoodStuff()
+            green = 420
+    END COMMON
+END GAME

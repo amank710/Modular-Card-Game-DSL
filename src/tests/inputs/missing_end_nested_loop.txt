@@ -1,0 +1,11 @@
+GAME
+    COMMON
+        on_turn()
+            loop (me > 2)
+                loop (you > 1)
+                    we = 3;
+                
+            end loop
+        end function
+    END COMMON
+END GAME

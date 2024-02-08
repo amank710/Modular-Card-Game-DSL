@@ -1,0 +1,4 @@
+GAME
+    COMMON
+    END COMMON
+END GAME

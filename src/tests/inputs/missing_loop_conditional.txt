@@ -1,0 +1,9 @@
+GAME
+    COMMON
+        on_turn()
+            loop 
+                bs
+            end loop
+        end function
+    END COMMON
+END GAME

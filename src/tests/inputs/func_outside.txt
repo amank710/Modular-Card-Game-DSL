@@ -1,0 +1,15 @@
+GAME
+    COMMON
+        on_turn()
+            loop (ter < 10)
+                if (t > 4) 
+                    fiver = 5;
+                end if
+            end loop
+        end function
+    END COMMON
+
+    setup() 
+        t = 5; 
+    end function
+END GAME
