@@ -527,3 +527,244 @@ We need tests for:
 ## Planned timeline for the remaining days.
 - Week of Feb 12: We plan to have some sort of a basic UI running, finishing the Checker, Factory and the Game module. By next weekend, we hope to be able to perform some user studies with our DSL.
 - Week of Feb 19: We plan to create the final video, testing the DSL thoroughly end-to-end from input to Game and challenging it with unusual scenarios and fixing issues as they come up.
+
+# Check-in 5 Report Items
+
+## Status of user study (should be completed this week at the latest) 
+- The user study will be done by February 18th (this week).
+
+## Last minute changes to design, implementation, or tests
+
+- Syntax updates:
+    - To improve code clarity and simplicity, the 'END' was removed from our state syntax.
+    - The syntax now supports complex arithmetic operations.
+    - The introduction of a DOT feature allows for direct access to internal variables or functions declared within the role module
+    - Mock implemented of BlackJack using our DSL:
+```
+CONFIGURATION
+    CARD_VALUE_OVERRIDE
+        ace = 11;
+        king = 10;
+        queen = 10;
+        joker = FALSE;
+        roles = PLAYER and DEALER;
+    ACTIONS
+        set HIT does pickCard();
+        set STAND does endTurn();
+    VARIABLES
+		set PLAYER has score;
+        set PLAYER has input;
+        set DEALER has score;
+        set DEALER has input;
+GAME
+    COMMON
+        setup()
+            DEALER.score = 0;
+            PLAYER.score = 0;
+        end function
+
+    USER_OVERRIDE PLAYER
+            on_turn()
+                PLAYER.input = InputFromPlayer(PLAYER);
+                loop (PLAYER.score < 22)
+
+                    if(input == HIT)
+                        PLAYER.score = PLAYER.score + PLAYER.HIT;
+                        if((card == ace) and (PLAYER.score > 21))
+                            PLAYER.score = PLAYER.score - 11 + 1;
+                        end if
+                    end if
+
+                    if(input == STAND)
+                        PLAYER.STAND;
+                    end if
+
+                    PLAYER.score = card + PLAYER.score;
+                    PLAYER.SHOW;
+                end loop
+                PLAYER.STAND;
+            end function
+
+    USER_OVERRIDE DEALER
+            on_turn()
+                loop (DEALER.score < 17)
+                    card = DEALER.HIT;
+                    DEALER.score = card + DEALER.score;
+                    DEALER.SHOW;
+                end loop
+                DEALER.STAND;
+								on_show_result()
+	           end function
+
+RESULT
+    if (PLAYER.score > 21)
+        PLAYER = BUST;
+    end if
+    if (DEALER.score > 21)
+        DEALER = BUST;
+    end if
+    if (PLAYER.score > DEALER.score)
+        PLAYER = WIN;
+    else
+        DEALER = WIN;
+    end if
+```
+- AST updates:
+    - Refactored the structure of the tree to make it clearer and more intuitive for human interpretation.
+    - Add new AST nodes, resulting in a total of approximately 20 nodes
+    - Mock implemented: e.g value(node name)  
+```
+'PROGRAM' (ProgramNode)
+  | 'CONFIGURATION' (ConfigurationNode)
+  |   | 'CARD_VALUE_OVERRIDE' (CardValueOverrideNode)
+  |   |   | 'CARDS' (CardsNode)
+  |   |   |   | 'ace' (CardTypeNode)
+  |   |   |   |   | '11' (CardValueNode)
+  |   |   |   | 'king' (CardTypeNode)
+  |   |   |   |   | '10' (CardValueNode)
+  |   |   |   | 'queen' (CardTypeNode)
+  |   |   |   |   | '10' (CardValueNode)
+  |   |   |   | 'joker' (CardTypeNode)
+  |   |   |   |   | 'FALSE' (CardValueNode)
+  |   |   | 'ROLES' (RoleNode)
+  |   |   |   | 'DEALER' (RoleNameNode)
+  |   |   |   | 'PLAYER' (RoleNameNode)
+  |   | 'ACTIONS' (ActionsNode)
+  |   |   | 'HIT' (ActionNode)
+  |   |   | 'STAND' (ActionNode)
+  |   | 'VARIABLES' (VariablesNode)
+  |   |   | 'DEALER' (VariableRoleNode)
+  |   |   |   | 'score' (VariableAssigneeNode)
+  |   |   | 'PLAYER' (VariableRoleNode)
+  |   |   |   | 'score' (VariableAssigneeNode)
+  | 'GAME' (GameNode)
+  |   | 'COMMON' (CommonNode)
+  |   |   | 'setup()' (FunctionNode)
+  |   |   |   | 'DEALER' (VariableAssigneeNode)
+  |   |   |   |   | '0' (ExpressionValueNode)
+  |   |   |   | 'PLAYER' (VariableAssigneeNode)
+  |   |   |   |   | '0' (ExpressionValueNode)
+  |   | 'USER_OVERRIDES' (CommonNode)
+  |   |   | 'on_turn()' (FunctionNode)
+  |   |   |   | 'input' (VariableAssigneeNode)
+  |   |   |   |   | 'InputFromPlayer' (FunctionNameNode)
+  |   |   |   |   |   | 'PLAYER' (ExpressionValueNode)
+  |   |   |   | 'LOOP' (LoopNode)
+  |   |   |   |   | '<' (OperatorNode)
+  |   |   |   |   |   | 'PLAYER' (UserNode)
+  |   |   |   |   |   |   | 'score' (UserActionNode)
+  |   |   |   |   |   | '22' (ExpressionValueNode)
+  |   |   |   |   | 'IF' (IfNode)
+  |   |   |   |   |   | '==' (OperatorNode)
+  |   |   |   |   |   |   | 'input' (ExpressionValueNode)
+  |   |   |   |   |   |   | 'HIT' (ExpressionValueNode)
+  |   |   |   |   |   | 'THEN' (IfNode)
+  |   |   |   |   |   |   | 'PLAYER' (VariableAssigneeNode)
+  |   |   |   |   |   |   |   | '+' (OperatorNode)
+  |   |   |   |   |   |   |   |   | 'PLAYER' (UserNode)
+  |   |   |   |   |   |   |   |   |   | 'score' (UserActionNode)
+  |   |   |   |   |   |   |   |   | 'PLAYER' (UserNode)
+  |   |   |   |   |   |   |   |   |   | 'HIT' (UserActionNode)
+  |   |   |   |   |   |   | 'IF' (IfNode)
+  |   |   |   |   |   |   |   | 'and' (OperatorNode)
+  |   |   |   |   |   |   |   |   | '==' (OperatorNode)
+  |   |   |   |   |   |   |   |   |   | 'card' (ExpressionValueNode)
+  |   |   |   |   |   |   |   |   |   | 'ace' (ExpressionValueNode)
+  |   |   |   |   |   |   |   |   | '>' (OperatorNode)
+  |   |   |   |   |   |   |   |   |   | 'PLAYER' (UserNode)
+  |   |   |   |   |   |   |   |   |   |   | 'score' (UserActionNode)
+  |   |   |   |   |   |   |   |   |   | '21' (ExpressionValueNode)
+  |   |   |   |   |   |   |   | 'THEN' (IfNode)
+  |   |   |   |   |   |   |   |   | 'PLAYER' (VariableAssigneeNode)
+  |   |   |   |   |   |   |   |   |   | '+' (OperatorNode)
+  |   |   |   |   |   |   |   |   |   |   | '-' (OperatorNode)
+  |   |   |   |   |   |   |   |   |   |   |   | 'PLAYER' (UserNode)
+  |   |   |   |   |   |   |   |   |   |   |   |   | 'score' (UserActionNode)
+  |   |   |   |   |   |   |   |   |   |   |   | '11' (ExpressionValueNode)
+  |   |   |   |   |   |   |   |   |   |   | '1' (ExpressionValueNode)
+  |   |   |   |   | 'IF' (IfNode)
+  |   |   |   |   |   | '==' (OperatorNode)
+  |   |   |   |   |   |   | 'input' (ExpressionValueNode)
+  |   |   |   |   |   |   | 'STAND' (ExpressionValueNode)
+  |   |   |   |   |   | 'THEN' (IfNode)
+  |   |   |   |   |   |   | 'PLAYER' (UserNode)
+  |   |   |   |   |   |   |   | 'STAND' (UserActionNode)
+  |   |   |   |   | 'PLAYER' (VariableAssigneeNode)
+  |   |   |   |   |   | '+' (OperatorNode)
+  |   |   |   |   |   |   | 'card' (ExpressionValueNode)
+  |   |   |   |   |   |   | 'PLAYER' (UserNode)
+  |   |   |   |   |   |   |   | 'score' (UserActionNode)
+  |   |   |   |   | 'PLAYER' (UserNode)
+  |   |   |   |   |   | 'SHOW' (UserActionNode)
+  |   |   |   | 'PLAYER' (UserNode)
+  |   |   |   |   | 'STAND' (UserActionNode)
+  |   | 'USER_OVERRIDES' (CommonNode)
+  |   |   | 'on_turn()' (FunctionNode)
+  |   |   |   | 'LOOP' (LoopNode)
+  |   |   |   |   | '<' (OperatorNode)
+  |   |   |   |   |   | 'DEALER' (UserNode)
+  |   |   |   |   |   |   | 'score' (UserActionNode)
+  |   |   |   |   |   | '17' (ExpressionValueNode)
+  |   |   |   |   | 'card' (VariableAssigneeNode)
+  |   |   |   |   |   | 'DEALER' (UserNode)
+  |   |   |   |   |   |   | 'HIT' (UserActionNode)
+  |   |   |   |   | 'DEALER' (VariableAssigneeNode)
+  |   |   |   |   |   | '+' (OperatorNode)
+  |   |   |   |   |   |   | 'card' (ExpressionValueNode)
+  |   |   |   |   |   |   | 'DEALER' (UserNode)
+  |   |   |   |   |   |   |   | 'score' (UserActionNode)
+  |   |   |   |   | 'DEALER' (UserNode)
+  |   |   |   |   |   | 'SHOW' (UserActionNode)
+  |   |   |   | 'DEALER' (UserNode)
+  |   |   |   |   | 'STAND' (UserActionNode)
+  | 'RESULT' (ResultNode)
+  |   | 'IF' (IfNode)
+  |   |   | '>' (OperatorNode)
+  |   |   |   | 'PLAYER' (UserNode)
+  |   |   |   |   | 'score' (UserActionNode)
+  |   |   |   | '21' (ExpressionValueNode)
+  |   |   | 'THEN' (IfNode)
+  |   |   |   | 'PLAYER' (VariableAssigneeNode)
+  |   |   |   |   | 'BUST' (ExpressionValueNode)
+  |   | 'IF' (IfNode)
+  |   |   | '>' (OperatorNode)
+  |   |   |   | 'DEALER' (UserNode)
+  |   |   |   |   | 'score' (UserActionNode)
+  |   |   |   | '21' (ExpressionValueNode)
+  |   |   | 'THEN' (IfNode)
+  |   |   |   | 'DEALER' (VariableAssigneeNode)
+  |   |   |   |   | 'BUST' (ExpressionValueNode)
+  |   | 'IF' (IfNode)
+  |   |   | '>' (OperatorNode)
+  |   |   |   | 'PLAYER' (UserNode)
+  |   |   |   |   | 'score' (UserActionNode)
+  |   |   |   | 'DEALER' (UserNode)
+  |   |   |   |   | 'score' (UserActionNode)
+  |   |   | 'THEN' (IfNode)
+  |   |   |   | 'PLAYER' (VariableAssigneeNode)
+  |   |   |   |   | 'WIN' (ExpressionValueNode)
+  |   |   | 'ELSE' (IfNode)
+  |   |   |   | 'DEALER' (VariableAssigneeNode)
+  |   |   |   |   | 'WIN' (ExpressionValueNode)
+```
+- To manage the UI and game logic efficiently, we plan to employ a queue-based system involving two separate queues: one dedicated to the UI and another for the game mechanics. 
+    - The front end will be responsible for retrieving game actions from its queue, and then re-queuing these actions for the game to interpret and execute the action.
+
+## Plans for final video 
+- One team member will set up a random game scenario(e.g BlackJack) and provide a brief explanation of the underlying code.
+- A code demonstration will be followed by a live game demo to showcase the practical implementation and effects of the code on the game.
+- The video will conclude with a segment highlighting the progress made based on feedback from initial to final user studies.
+
+
+## Planned timeline for the remaining days.
+- Feb 16:
+    - Complete AST (Abstract Syntax Tree) and Static Checker development.
+    - Implement tests to convert ANTLR4 parse tree to AST, ensuring errors are thrown for syntax mistakes.
+    - Implement tests to verify the correctness of objects generated by the Factory module.
+- Feb 18:
+    - Finish integration of the Factory and Game modules.
+    - Finalize the MVP
+    - Conduct a user study to gather feedback on our DSL
+    - Film the final video presentation.
+- Feb 22:
+    - Focus on bug fixes and final refinements.
