@@ -1,3 +1,14 @@
+CONFIGURATION
+    CARD_VALUE_OVERRIDE
+        ace = 11;
+        king = 10;
+        queen = 10;
+        joker = FALSE;
+        roles = DEALER and PLAYER;
+    VARIABLES
+        set DEALER has score;
+        set PLAYER has score;
+
 GAME
     COMMON
         on_turn()
@@ -7,5 +18,8 @@ GAME
                 
             end loop
         end function
-    END COMMON
-END GAME
+
+RESULT
+    if (PLAYER.score > 21)
+        PLAYER = BUST;
+    end if

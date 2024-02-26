@@ -1,58 +1,67 @@
- CONFIGURATION
+CONFIGURATION
     CARD_VALUE_OVERRIDE
-        ace = 11;
-        king = 10;
-        queen = 10;
         joker = FALSE;
         roles = DEALER and PLAYER;
-    END CARD_VALUE_OVERRIDE
     ACTIONS
-        set HIT does pickCard();
-        set HITHIDE does pickCard() and hideCard();
-    END ACTIONS
+        set HIT does pickCard;
+        set STAY does skipTurn;
     VARIABLES
+        set PLAYER has score;
+        set PLAYER has input;
+        set PLAYER has action;
+        set DEALER has score;
+        set DEALER has input;
+        set PLAYER has result;
+        set DEALER has result;
         set DEALER has score;
         set PLAYER has score;
-    END VARIABLES
-END CONFIGURATION
-
 GAME
     COMMON
-        on_turn()
-            if (score >= 100)
-                player1_score = 100;
-            else
-                 player1_score = 100;
-                 loop (player1_score < 10)
-                player1_score = player1_score + 1;
-            end loop
-            end if
-        end function
         setup()
-            score = 0;
+            DEALER.score = 0;
+            PLAYER.score = 0;
         end function
-    END COMMON
+
+    USER_OVERRIDE PLAYER
+            on_turn()
+                PLAYER.action = waitFor(HIT,STAY);
+                loop (PLAYER.action == HIT)
+                    PLAYER.action = waitFor(HIT, STAY);
+                end loop
+            end function
+
+            on_HIT()
+                PLAYER.score = PLAYER.score + PLAYER.card;
+            end function
+
+            on_STAY()
+            end function
 
     USER_OVERRIDE DEALER
-        on_put_config_user_action_here()
-            player1_score = 0;
-        end function
+            on_turn()
+                waitFor(HIT,STAY);
+            end function
 
-        on_put_config_user_action_here()
-            loop (player1_score < 10)
-            loop (player1_score < 10)
-                player1_score = player1_score + 1;
-            end loop
-            end loop
-        end function
-    END USER_OVERRIDE
-END GAME
+            on_HIT()
+                DEALER.score = DEALER.score + DEALER.card;
+            end function
+
+            on_STAY()
+            end function
 
 RESULT
-    IF (player1_score > player2_score)
-        player_1 = WIN;
-    ELSE
-        player_2 = WIN;
-    END IF
-END RESULT
-
+    if ((DEALER.score > 17) and (DEALER.score > PLAYER.score))
+        PLAYER.result = LOST;
+        DEALER.result = WIN;
+    end if
+    if ((DEALER.score > 17) and (PLAYER.score > DEALER.score))
+        PLAYER.result = WIN;
+        DEALER.result = LOST;
+    end if
+    
+    if (PLAYER.score > 21)
+        PLAYER.result = LOST;
+    end if
+    if (DEALER.score > 21)
+        DEALER.result = LOST;
+    end if

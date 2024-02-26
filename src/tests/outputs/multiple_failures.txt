@@ -1,0 +1,2 @@
+Role SOMETHING is not declared
+Variable PLAYER.something is not declared

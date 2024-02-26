@@ -1,0 +1,73 @@
+CONFIGURATION
+    CARD_VALUE_OVERRIDE
+        joker = FALSE;
+        roles = PLAYER and DEALER;
+    ACTIONS
+        set HIT does pickCard;
+        set STAY does skipTurn;
+    VARIABLES
+        set PLAYER has score;
+        set PLAYER has input;
+        set DEALER has score;
+        set DEALER has input;
+        set PLAYER has result;
+        set DEALER has result;
+GAME
+    COMMON
+        setup()
+            DEALER.score = 0;
+            PLAYER.score = 0;
+        end function
+
+    USER_OVERRIDE PLAYER
+            on_turn()
+                PLAYER.input = waitFor(HIT,STAY);
+                loop(PLAYER.input == HIT)
+                     PLAYER.input = waitFor(HIT,STAY);
+                end loop
+            end function
+
+            on_HIT()
+                if ( (PLAYER.input == 1) and ((PLAYER.score + PLAYER.input) <= 21))
+                    PLAYER.score = PLAYER.score + 11;
+                else
+                    if ((PLAYER.HIT == 11) or (PLAYER.HIT == 12) or (PLAYER.HIT == 13))
+                        PLAYER.score = PLAYER.score + 10;
+                    else
+                        PLAYER.score = PLAYER.score + PLAYER.HIT;
+                    end if
+                end if
+            end function
+
+    USER_OVERRIDE DEALER
+            on_turn()
+                DEALER.input = waitFor(HIT,STAY);
+                loop((DEALER.input == HIT) and (DEALER.score > 17))
+                     DEALER.input = waitFor(HIT,STAY);
+                end loop
+            end function
+
+            on_HIT()
+                if ( (DEALER.input == 1) and ((DEALER.score + DEALER.input) <= 21))
+                    DEALER.score = DEALER.score + 11;
+                else
+                    if ((DEALER.input == 11) or (DEALER.input == 12) or (DEALER.input == 13))
+                        DEALER.score = DEALER.score + 10;
+                    else
+                        DEALER.score = DEALER.score + DEALER.input;
+                    end if
+                end if
+            end function
+
+RESULT
+    if (PLAYER.score > 21)
+        PLAYER.result = LOST;
+    end if
+    if (DEALER.score > 21)
+        DEALER.result = LOST;
+    end if
+    if (PLAYER.score > DEALER.score)
+        PLAYER.result = WIN;
+    else
+        DEALER.result = WIN;
+    end if

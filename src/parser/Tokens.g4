@@ -12,6 +12,7 @@ RCURLY : '}' ;
 ASSIGN : '=' ;
 HAS : 'has' | 'HAS' ;
 DOES : 'does' | 'DOES' ;
+DOT : '.' ;
 
 // Relational and Arithmetic Operators
 RELATIONAL : '>' | '<' | '==' | '!=' | '>=' | '<=' ;
@@ -38,33 +39,28 @@ LOOP_END : 'END LOOP' | 'end loop' ;
 
 // Configuration Section Tokens
 CONFIG_START : 'CONFIGURATION' ;
-CONFIG_END : 'END CONFIGURATION' ;
 CARD_VAL_OVERRIDE_START : 'CARD_VALUE_OVERRIDE' ;
-CARD_VAL_OVERRIDE_END : 'END CARD_VALUE_OVERRIDE' ;
 ACTIONS_START : 'ACTIONS' ;
-ACTIONS_END : 'END ACTIONS' ;
 VARIABLES_STRUCT_START : 'VARIABLES' ;
-VARIABLES_STRUCT_END : 'END VARIABLES' ;
 
 ROLES : 'ROLES' | 'roles' ;
-ENTITY_CARD : 'ace' | 'king' | 'queen' | 'joker' ;
+ENTITY_CARD : 'ace' | 'king' | 'queen' | 'jack' | 'ACE' | 'KING' | 'QUEEN' | 'JACK' ;
+DISABLEABLE_CARD : 'joker' | 'JOKER' ;
 SET : 'SET' | 'set' ;
 
 
 // Block and Section Markers
 RESULT_START : 'RESULT' ;
-END_RESULT : 'END RESULT' ;
 GAME_START : 'GAME' ;
-GAME_END : 'END GAME' ;
-COMMON_START : 'COMMON' ;
-COMMON_END : 'END COMMON' ;
-USER_START : 'USER_OVERRIDE' WS* STRING;
+COMMON : 'COMMON' ;
+USER_START : 'USER_OVERRIDE' ;
 USER_END : 'END USER_OVERRIDE' ;
-FUNC_START : 'on_turn()' | 'setup()' | ACTION_CALLBACK ;
+OVERRIDABLE_FUNCTION : 'on_turn' | 'setup' ;
 FUNC_END : 'END FUNCTION' | 'end function' ;
 
-SYSTEM_ACTION : 'pickCard()' | 'hideCard()' ;
-USER_ACTION : STRING LPAREN RPAREN ;
-ACTION_CALLBACK : 'on_' (USER_ACTION | SYSTEM_ACTION) ;
+SYSTEM_ACTION : 'pickCard' | 'skipTurn' ;
+SYSTEM_FUNCTION : 'waitFor' ;
+ACTION_CALLBACK : 'on_' (STRING | SYSTEM_ACTION) ;
+
 
 STRING : [a-zA-Z_][a-zA-Z0-9_]* ;

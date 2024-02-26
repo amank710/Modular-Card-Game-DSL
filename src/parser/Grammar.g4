@@ -4,74 +4,103 @@ options {
     tokenVocab=Tokens; // Using the lexer definitions from Tokens
 }
 
-program : config game result_block EOF ;
+program : config game result EOF ;
 
-config : CONFIG_START config_struct+ CONFIG_END ;
+config : CONFIG_START config_struct+ ;
 
 config_struct
     : card_val_override
     | actions
-    | variables_struct
+    | variable_declarations_struct
     ;
 
-card_val_override : CARD_VAL_OVERRIDE_START (cards | roles)+ CARD_VAL_OVERRIDE_END ;
+card_val_override : CARD_VAL_OVERRIDE_START (card_val_assignment | card_disable | roles)+ ;
 
-cards : ENTITY_CARD ASSIGN basicExpression SEMI ;
+card_disable : DISABLEABLE_CARD ASSIGN BOOLEAN SEMI ;
 
-actions : ACTIONS_START (user_actions)+ ACTIONS_END ;
+card_val_assignment : ENTITY_CARD ASSIGN card_val (AND card_val)* SEMI ;
+
+card_val : INTEGER ;
+
+actions : ACTIONS_START (user_actions)+ ;
 
 user_actions : SET STRING DOES user_actions_block (AND user_actions_block)* SEMI;
 
-user_actions_block : (SYSTEM_ACTION | USER_ACTION);
+user_actions_block : (SYSTEM_ACTION | user_action);
 
-roles : ROLES ASSIGN STRING (AND STRING)* SEMI ;
+user_action : STRING ;
+
+roles : ROLES ASSIGN role (AND role)* SEMI ;
 
 role : STRING ;
 
-variables_struct : VARIABLES_STRUCT_START (variable_assignment)+ VARIABLES_STRUCT_END ;
+variable_declarations_struct : VARIABLES_STRUCT_START (variable_declaration)+ ;
 
-variable_assignment : SET STRING HAS basicExpression SEMI ;
+variable_declaration : SET (common_variable_declaration | role_variable_declaration);
+common_variable_declaration : COMMON HAS variable_name SEMI ;
+role_variable_declaration : role HAS variable_name SEMI ;
 
-game : GAME_START (common_block | user_block)* GAME_END ;
+variable_name : STRING ;
 
-common_block : COMMON_START (function)+ COMMON_END ;
+game : GAME_START (common_block | user_block)* ;
 
-user_block : USER_START (function)+ USER_END ;
+common_block : COMMON (function)+ ;
 
-function : FUNC_START (func_statement)+ FUNC_END ;
+user_block : USER_START role (function)+ ;
+
+function : func_decl (func_statement)* FUNC_END ;
+
+func_decl : (OVERRIDABLE_FUNCTION | ACTION_CALLBACK) LPAREN RPAREN ;
 
 func_statement
     : loop
-    | variable
+    | variableAssignment
     | conditional
-    | action
+    | functionCall SEMI
     ;
 
-loop : LOOP_START LPAREN expression RPAREN (func_statement)+ LOOP_END ;
+loop : LOOP_START LPAREN expression RPAREN loop_body LOOP_END ;
 
-variable : STRING ASSIGN expression SEMI ;
+loop_body : (func_statement)+;
 
-conditional : CONDITIONAL_IF LPAREN expression RPAREN ifBlock (CONDITIONAL_ELSE elseBlock)? CONDITIONAL_END ;
+variableAssignment :  (variableAccessor) ASSIGN expression SEMI ;
 
-ifBlock : (func_statement)+ ;
+conditional : CONDITIONAL_IF LPAREN expression RPAREN conditional_true (conditional_false)? CONDITIONAL_END ;
 
-elseBlock : (func_statement)+ ;
+conditional_true : (func_statement)+ ;
 
-action : (STRING | SYSTEM_ACTION) SEMI ;
+conditional_false : CONDITIONAL_ELSE (func_statement)+;
+
+functionCall
+    : SYSTEM_FUNCTION (LPAREN expression (COMMA expression)* RPAREN)?
+    | user_action (LPAREN expression (COMMA expression)* RPAREN)?;
 
 expression
-    : basicExpression (binaryOperator basicExpression)?
-    | groupedExpression
-    | arithmeticExpression
+    : baseExpression (binaryExpression | arithmeticExpression)?
+    | functionCall
     ;
 
-arithmeticExpression : basicExpression ARITHMETIC basicExpression ;
+arithmeticExpression 
+    : (ARITHMETIC expression ) ;
+
+baseExpression
+    : basicExpression
+    | groupedExpression
+    ;
+
+binaryExpression
+    : (binaryOperator expression)
+    ;
 
 basicExpression
     : BOOLEAN
     | INTEGER
     | STRING
+    | ENTITY_CARD
+    | variableAccessor
     ;
+
+variableAccessor: (COMMON | role) DOT variable_name;
 
 groupedExpression : LPAREN expression RPAREN ;
 
@@ -79,12 +108,8 @@ binaryOperator
     : RELATIONAL
     | AND
     | OR
-    | NOT
     ;
 
-result_block : RESULT_START (resultContent)+ END_RESULT ;
+result : RESULT_START result_block;
 
-resultContent
-    : conditional
-    | variable
-    ;
+result_block : func_statement+;

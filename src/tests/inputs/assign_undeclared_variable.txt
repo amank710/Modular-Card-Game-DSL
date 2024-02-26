@@ -1,0 +1,25 @@
+CONFIGURATION
+    CARD_VALUE_OVERRIDE
+        king = 10;
+        queen = 10;
+        jack = 10;
+        joker = FALSE;
+        roles = PLAYER and DEALER;
+    ACTIONS
+        set HIT does pickCard();
+        set STAND does endTurn();
+    VARIABLES
+        set PLAYER has score;
+        set DEALER has score;
+        set PLAYER has result;
+        set DEALER has result;
+GAME
+    COMMON
+        setup()
+            DEALER.score = PLAYER.something ;
+        end function
+
+RESULT
+    if (DEALER.score > 21)
+        PLAYER.result = LOST;
+    end if

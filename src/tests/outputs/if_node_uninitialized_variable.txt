@@ -1,0 +1,2 @@
+Variable DEALER.score is not initialized
+Variable DEALER.score is not initialized

@@ -1,5 +1,16 @@
 CONFIGURATION
     CARD_VALUE_OVERRIDE
-        roles = DEALER PLAYER;
-    END CARD_VALUE_OVERRIDE
-END CONFIGURATION
+        joker = FALSE;
+        roles = PLAYER DEALER;
+    ACTIONS
+        set HIT does pickCard;
+        set STAY does skipTurn;
+    VARIABLES
+        set PLAYER has score;
+        set PLAYER has input;
+        set DEALER has score;
+        set DEALER has input;
+        set PLAYER has result;
+        set DEALER has result;
+        set DEALER has score;
+        set PLAYER has score;

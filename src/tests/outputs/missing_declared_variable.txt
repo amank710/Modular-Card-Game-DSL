@@ -1,0 +1,1 @@
+Variable PLAYER.something is not declared

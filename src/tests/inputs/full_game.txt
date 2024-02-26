@@ -1,32 +1,39 @@
 GAME
     COMMON
-        on_turn()
-            if (score >= 100)
-                player1_score = 100;
-            else
-                player1_score = 100;
-                loop (player1_score < 10)
-                    player1_score = player1_score + 1;
-                end loop
-            end if
-        end function
         setup()
-            score = 0;
+            DEALER.score = 0;
+            PLAYER.score = 0;
         end function
-    END COMMON
+
+    USER_OVERRIDE PLAYER
+            on_turn()
+                waitFor(HIT,STAY);
+            end function
+
+            on_HIT()
+                PLAYER.score = PLAYER.score + PLAYER.card;
+            end function
+
+            on_STAY()
+            end function
 
     USER_OVERRIDE DEALER
-        on_put_config_user_action_here()
-            player1_score = 0;
-        end function
+            on_turn()
+                waitFor(HIT,STAY);
+            end function
 
-        on_put_config_user_action_here()
-            loop (player1_score < 10)
-                loop (player1_score < 10)
-                    player1_score = player1_score + 1;
-                end loop
-            end loop
-        end function
-    END USER_OVERRIDE
-END GAME
+            on_HIT()
+                DEALER.score = DEALER.score + DEALER.card;
+            end function
 
+            on_STAY()
+                if (DEALER.score > 4)
+                    DEALER.score = DEALER.score + 1;
+                    if (DEALER.score > 12)
+                        DEALER.score = DEALER.score + 1;
+                        DEALER.score = DEALER.score + 2;
+                    end if
+                else
+                    DEALER.score = DEALER.score + 12;
+                end if
+            end function

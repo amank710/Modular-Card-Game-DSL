@@ -14,6 +14,4 @@ chmod +x "$SCRIPT_DIR"/fix_formatting.sh
 python3 -m venv "$SCRIPT_DIR"/env
 source "$SCRIPT_DIR"/env/bin/activate
 
-pip install antlr4-tools
-pip install autopep8
-antlr4 "$SCRIPT_DIR"/src/parser/* -Dlanguage=Python3
+pip install -r "$SCRIPT_DIR"/requirements.txt

@@ -1,0 +1,54 @@
+CONFIGURATION
+    CARD_VALUE_OVERRIDE
+        joker = FALSE;
+        roles = PLAYER and DEALER;
+    ACTIONS
+        set HIT does pickCard;
+        set STAY does skipTurn;
+    VARIABLES
+        set PLAYER has score;
+        set PLAYER has input;
+        set DEALER has score;
+        set DEALER has input;
+        set PLAYER has result;
+        set DEALER has result;
+        set SOMETHING has score;
+GAME
+    COMMON
+        setup()
+            DEALER.score = 0;
+            PLAYER.score = 0;
+            SOMETHING.score = 1;
+        end function
+
+    USER_OVERRIDE PLAYER
+            on_turn()
+                waitFor(HIT,STAY);
+            end function
+
+            on_HIT()
+                PLAYER.score = PLAYER.score + 12;
+            end function
+
+            on_STAY()
+            end function
+
+    USER_OVERRIDE DEALER
+            on_turn()
+                waitFor(HIT,STAY);
+            end function
+
+            on_HIT()
+                DEALER.score = DEALER.score + 11;
+            end function
+
+            on_STAY()
+            end function
+
+RESULT
+    if (PLAYER.something > 21)
+        PLAYER.result = LOST;
+    end if
+    if (DEALER.score > 21)
+        DEALER.result = LOST;
+    end if
